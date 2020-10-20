@@ -1,0 +1,288 @@
+---
+title: "Linear and Logistic Regression Modelling on GSS2017 family data: Total number of children vs. Family Income, Household Size, Age and Sex"
+author: "Group 67：Huiyan Li，Bingzhen Wan, Wenyu Qu, Tongxin Zeng"
+date: "Oct 19, 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo=FALSE, include= FALSE}
+#Read data
+library(readr)
+library(tidyverse)
+data <- read_csv("gss.csv",col_types = cols())
+```
+
+## Abstract
+
+In this project, we want to find answers to some questions related to the Canadian family. We used linear regression models and a logistic regression model to deal with GSS 2017(data on social trend). We investigated the relationship between the total number of children and family income, household size, age and sex. We found that the total number of children negatively correlates with male and weakly correlates with family income but positively correlates with household size. The analysis matters because after discovering the relationship between these variables, we might infer to the whole population, deal with practical problems and carry out solutions.
+
+## Introduction
+
+In nowadays society, as families are becoming increasingly diverse, each individual's understanding of family "must navigate through changing conjugal, family, and work trajectories." (GSS31 User Guide) Family is one of the most integral parts of each individual's life. However, how many people does a Canadian family usually contain? Is age affecting a family's number of children? Does family with higher income tend to have more children? To discover the answer to these questions regarding the Canadian family, we conduct a statistical project using simple linear Regression and logistic Regression and various plots to aim for the correct conclusions for the questions proposed. Under this report, the audience will recognize the connection between the number of children per person and the explanatory factors, such as age, household income, sex differences and household size. One of the most critical aspects of this report, by studying the core questions above, which people can realize the reason behind the increase in population growth rate in recent years (The World Bank, 2020). By studying the change of total children per family, people will be able to identify the cause of Canada's increasing population growth rate: due to the increasing number of newborn children or the increase in the number of immigrants and refugees. 
+
+In this project, we are using the data from GSS 2017, which gather the data on social trend; we use strata to deal with the data. The overall response rate was 52.4%, which leaves many results blank and might cause errors.
+
+This project's initial hypothesis is that there is a linear relationship between the total number of children and household size, age, participants' sex, and household income. We set the total number of children per person as response variables; household income, age, participant's sex and household size as explanatory variables. The first step is to study whether there is a linear relationship between the total number of children and the explanatory variables. Then, to observe whether the relationships are positive or negative.
+
+## Data
+
+This project uses GSS 2017 data, which investigates families across Canada's ten provinces. GSS gather the information on social trend and classified variables like age, income, the total number of children, sex etc.
+
+The target population for GSS2017 is all people aged 15 and older in Canada except the residents in Yukon, Northwest, Nunavut, and full-time residents of institutions. Furthermore, to deal with the sample, each of the ten provinces was divided into strata and the non-CMA area of each of the ten provinces was also grouped to form another ten strata; hence, there are 27 strata in total. 
+
+First of all, we carefully choose the response variable and explanatory variable because most of them are continuous variables, which people can study the distribution of it. Two components created this survey's frame: the telephone number in use and another is the address registered. In this survey, 86% of the available phone number was linked to address registered, and 14% were not, they all resulted in the survey's frame.
+
+The sample conducts random sampling without replacement in each stratum. 91.8% of the phone number reached eligible households (the household include at least one person aged >= 15). The target sample size was 20000, while 20602 responded. Respondents were interviewed in the official language of their choice. The calls being made from approximately 9:00 a.m. to 9:30 p.m. Mondays to Fridays. Interviewing was also scheduled from 10:00 a.m. to 5:00 p.m. on Saturdays and 1:00 p.m. to 9:00 p.m. on Sundays. At first, those who refused to participate were re-contacted up to two more times to explain the importance of the survey and encourage their participation. For cases in which the timing of the interviewer's call was inconvenient, an appointment was arranged to call back at a more convenient time. For cases in which there was no one home, numerous callbacks were made.
+
+The overall response rate was 52.4%. One of the key strengths of our data it's the consistency. This data reveals the relationship between the total number of children and enlightens audiences to a broader scope – to study the composition of Canada's increasing population in the past five years. However, this survey's weakness is that people will usually avoid or refuse to answer some of the survey questions, leading the data trend to be hard to analyze due to errors and missing data.
+
+Our model uses the total number of children per person as response variables(y), household income, age, participant's sex, and household size as explanatory variables(x). There are other similar variables, such as the first child's age. Those variables are also numeric, but we did not use them because they are not within our study's scope. 
+
+Since the family income is a variable with range, in other words, the option of family income is not numeric; therefore, we construct another way to express family income, for example, family income below 25000 is denoted as 1, family income between 25,000 and 49,999 is denoted as two and so forth. Therefore, all variables we use are numeric.
+
+## Exploratory Data Analysis
+
+```{r, echo=FALSE, include= FALSE}
+#Select variables of interest
+data_table <- data %>% 
+  select(total_children, age, hh_size, income_family, sex) %>%
+  filter(!is.na(total_children))
+```
+
+We plan to explore the relationship between our response variable(i.e. the total number of children per household) and three explanatory variables(i.e. household size, age and household income) in this section. We first plotted a histogram for the total number of children for all households included in the sample dataset:
+
+#Total Children Histogram
+
+```{r, echo=FALSE}
+data_table %>% 
+  ggplot(aes(x = total_children)) + geom_histogram(bins = 7) + labs(title = "Figure 1 - Total Children Histogram")  
+mean(data_table$total_children)
+median(data_table$total_children)
+```
+As the histogram shown in figure 1, our response variable's distribution is right-skewed, meaning there is no well-defined center of the distribution. Therefore, we examed both mean(1.678813 children) and median(2 children) of the distribution to report its typical value/center. Since the number of children should be a positive integer, we choose to use the median(2) as the center of our distribution, meaning participants in our survey sample typically has a total of 2 children. 
+
+We now begin investigating whether there is a linear relationship between our response variable and the explanatory variables. 
+
+The first set of variables under investigation is total children versus household size: 
+
+#Total Children vs Household Size
+
+```{r, echo=FALSE}
+#Total Children vs HH_Size Scatterplot
+data_table %>% 
+  ggplot(aes(y = total_children, x = hh_size)) + geom_point() + geom_count() + labs(x = "hh_size", y="total_children", title = "Figure 2.1 - Total Children vs. HH_Size")
+
+#Total Children vs HH_Size LM
+SLRmodel1 <- lm(total_children~hh_size, data = data_table)
+plot(data_table$hh_size, data_table$total_children, main="Figure 2.2 - Total Children vs. HH_Size", xlab="hh_size", ylab="total_children")
+abline(SLRmodel1)
+
+#Total Children vs HH_Size Boxplot
+data_table %>% 
+  ggplot(aes(x = hh_size, y = total_children, group = hh_size)) + geom_boxplot() + labs(x = "hh_size", y="total_children", title = "Figure 2.3 - Total Children vs. HH_Size")
+```
+
+From the scatterplot shown in figure 2.1, we noticed that the largest dots' y-value(i.e. total number of children) for each household size category increases as household size increases. From observing the regression line trend plotted in figure 2.2, we noticed that the line goes upward and passes through the y-axis at around 1.5 when household size equals 0. From observing the boxplot in figure 2.3, we noticed that generally speaking, the boxplot's total children median of each household size category increases as household size increases. Moreover, the IQR(=Q3-Q1) of the total number of children for "household size = 6" is the largest among all other household sizes, meaning the variability of the total number of children in this household size category is more considerable than others. In conclusion, all three graphs suggest a positive linear relationship between household size and children's total number. 
+
+The second set of variables under investigation is total children versus participant's age:
+
+#Total Children vs Age
+
+```{r, echo=FALSE}
+#Total Children vs Age Scatterplot
+data_table %>% 
+  ggplot(aes(y = total_children, x = age)) + geom_point() + geom_count() + labs(x = "age", y="total_children", title = "Figure 3.1 - Total Children vs. Age")
+```
+
+From the scatterplot shown in figure 3.1, we noticed that before around 32 years old, as age increases, the total number of children increases accordingly. But after approximately 32 years old, it seems to be no longer appropriate to use regression to study the relationship between our variables. Therefore, we conclude that this set of variables is not ideal for us to use in the analysis.
+
+The third set of variables under investigation is total children versus family income. The family income is sorted into 6 ranks based on their values: "Less than CAD25,000" -> 1, "CAD25,000 to CAD49,999" -> 2, "CAD50,000 to CAD74,999" -> 3, "CAD75,000 to CAD99,999" -> 4, "CAD100,000 to CAD124,999" -> 5, "CAD125,000 and more" -> 6.
+
+#Total Children vs Family Income
+
+```{r, echo=FALSE}
+#Total Children vs Income_Family Scatterplot
+family_income_ord <- c("Less than $25,000","$25,000 to $49,999","$50,000 to $74,999","$75,000 to $99,999","$100,000 to $ 124,999","$125,000 and more")
+ordered <- factor(data_table$income_family, levels = family_income_ord)
+family_income_rank <- as.numeric(ordered)
+data_table$family_income_rank <- family_income_rank
+data_table %>% 
+  ggplot(aes(y = total_children, x = family_income_rank)) + geom_point() + geom_count() + labs(x = "family income rank(1 is the lowest, 6 is the highest)", y="total children", title = "Figure 4.1 - Total Children vs. Family Income")
+
+#Total Children vs Income_Family LM
+SLRmodel3 = lm(total_children~family_income_rank, data = data_table)
+plot(data_table$family_income_rank, data_table$total_children, main="Fig 4.2 - Total Children vs. Family Income", xlab="family income rank", ylab="total children")
+abline(SLRmodel3)
+
+#Total Children vs Income_Family Boxplot
+data_table %>% 
+  ggplot(aes(x = family_income_rank , y = total_children, group = family_income_rank)) + geom_boxplot() + labs(x = "family income rank", y="total children", title = "Figure 4.3 - Total Children vs. Family Income")
+```
+
+From the scatterplot shown in figure 4.1, we noticed that the largest dots' y-value(i.e. the total number of children) for each family income category lies between 0 and 2, which is almost consistent among all category. So we won't be able to tell much about their trends from the graph. From observing the regression line trend plotted in figure 4.2, we noticed that the line is virtually horizontal and passes through the y-axis at around 1.8 when family income equals 0. From observing the boxplot in figure 4.3, we noticed that the boxplot's median of each household income category almost stays the same among all categories. The IQR(=Q3-Q1) of the total number of children for "household income rank < 4" is larger than "household income rank > 4", meaning the variability of the total number of children below the household income rank four is more considerable than wealthier families. In conclusion, we can not conclude much about the correlation between household income and children's total number from the graphs we have for now. We will develop more sophisticated models for further analysis.
+
+## Model
+
+#Model 1
+
+We first fitted a linear regression model(Model 1) between total children and sex, household size and family income rank. The mathematical notation of the model is $$Total Children = \beta_0 + \beta_1\times sex +\beta_2\times hh.size+ \beta_3\times family.income.rank + \epsilon_i$$, where response variable y is numbers of total children, $\beta_0$ is the intercept of the linear regression line, $\beta_1$ is the estimate value of sex, $\beta_2$ is the estimate value of household size, $\beta_3$ is the estimate value of family income rank that we assigned, and $\epsilon_i$ is the error in the observation. 
+
+```{r, echo=FALSE, include = FALSE}
+model_1 <- lm(total_children ~ sex + hh_size + family_income_rank ,data = data_table)
+summary(model_1)
+```
+
+Our initial hypothesis for this model is that the total number of children has a positive correlation with household size and family income rank since we expected that larger household size and higher family income rank could have more children. And we expected the total number of children to negatively correlated with Male, as single mothers might raise some children and their father may not know their children's existence.
+
+#Model 2
+
+Our model's special case is a linear regression model between total children and family income rank, sex, and family income rank* sex. The mathematical notation of the model is $$Total Children = \beta_0+\beta_1\times family.income.rank + \beta_2\times sex + \beta_3\times family.income.rank \times\ sex + \epsilon_i$$, where response variable y is total number of children; $b_0$ is the intercept of the linear regression line; $b_1$ is the estimate value/slope of family income rank; $b_2$ is the estimate value/slope of sex. $b_3$ is the estimate value/slope of $family income rank*sex$, which is an interaction term that indicates sex could change the impact of family income rank on numbers of total children; and $\epsilon_i$ is the error in the observation. 
+
+```{r, echo=FALSE, include = FALSE}
+data_table %>% 
+  ggplot(aes(y = total_children, x = family_income_rank, color=sex)) + 
+  geom_point(alpha=0.5) + geom_smooth(method ="lm",se=FALSE) + labs(x = "family_income_rank", y="total_children", title = "Figure 4.4 - Total Children vs. family Income Rank for different gender")
+model_2 = lm(total_children~family_income_rank + sex + family_income_rank*sex, data = data_table)
+summary(model_2)
+```
+
+Our initial hypothesis for this model is that the total number of children has a weak positive correlation with family income rank and negatively correlates with sexMale. Thus, we expected the total number of children might negatively correlate with the interaction term: family income rank* sex. We also expected that for males, as income rank increases, the total number of children would increase. For females, when income rank increases, the total number of children would decrease, as they might spend more time on work rather than having more children. And we will draw a plot to see the impact of family income rank on numbers of total children for male and female. 
+
+#Model 3
+
+Lastly, we fitted a logistic regression model between whether having a large number of children or not and family income, household size, and sex. First, we defined that if the respondent's total number of children is bigger than the mean total number of children, which is 1.679 (3 decimal points), then the respondent is considered having a large number of children, where have a large number of children = 1 and not = 0. The mathematical notation of the model is $$log(\hat p/(1-\hat p)) = \beta_0+\beta_1\times family.income.rank +\beta_2\times hh.size + \beta_3\times sex$$, where the result of the function represents the probability of having a large number of children; $b_0$ represent the intercept of the linear regression line; $b_1$ represents the change in log odds as there is a one-unit increase in family income rank. $b_2$ represents the change in log odds as there is a one-unit increase in household size. $b_3$ represents the change in log odds between Female sex and Male sex, and we set Male sex as our dummy variable.
+
+```{r, echo=FALSE, include = FALSE}
+#wealthiness vs age, total children, and hh_size
+data_table <- data_table %>% 
+  mutate(large_number_of_children = ifelse(total_children >= mean(data_table$total_children), 1, 0))
+
+model_3<-glm(large_number_of_children ~ family_income_rank + hh_size + sex, family = binomial, data = data_table)
+summary(model_3)
+```
+
+Our initial hypothesis for this model is that respondents in a wealthy, larger household size and as a male respondent will have a larger probability of having many children.
+
+## Results
+
+#Result for model 1
+
+```{r, echo=FALSE}
+model_1 <- lm(total_children ~ sex + hh_size + family_income_rank ,data = data_table)
+summary(model_1)
+```
+
+From the summary statistics we observe that the formula of estimated linear regression model_1 of y is $$Total Children = 1.489983 – 0.144742\times sexMale + 0.183439\times hh.size- 0.049369\times family.income.rank $$, where sexMale equals to 1 if the respondent is male and sexMale equals to 0 if the respondent is female.
+
+The intercept of the fitted regression line and the y-axis is 1.490 (3 decimal points), meaning that the total children of someone, not a male, with zero household size and having zero family income, is 1.490. As $b_1 = -0.145$, implying that when Male increases by one unit, the corresponding average decrease in children's total numbers are 0.145 units (3 decimal points), given other predictors hold constant. As $b_2 = 0.183$, implying that when household size increases by one unit, the corresponding average increase in children's total numbers are 0.183 units (3 decimal points), given other predictors hold constant. As $b_3 = -0.049$, implying that when family income rank increases by one unit, the corresponding average decrease in children's total numbers are 0.049 units (3 decimal points), given other predictors hold constant. 
+
+Hence, the total number of children negatively correlates with Male and a positively correlates with household size, which aligns with our initial hypothesis. However, it has a weak negative correlation with family income rank, which is in contract with our initial hypothesis.
+
+In the summary statistics, we can see that the standard error of $b_1$ is 0.021(3 decimal points), the standard error of $b_2$ is 0.009(3 decimal points), and the standard error of $b_3$ is 0.006(3 decimal points). Therefore, SE($b_3$) < SE($b_2$) < SE($b_1$), showing that the mean estimation of family income rank is more accurate than household size and the mean estimate of household size is more accurate than sex Male.
+
+Then we investigate the p-value for each predictor. For the intercept, H0: $b_0 = 0$, and H_a: $b_0 ≠ 0$, since p-value of the intercept coefficient is < 2e-16 < 0.05, therefore, we reject H0, support H_a, so $b_0 ≠ 0$, implying that the fitted line does not passes through the origin. For sexMale, H0: $b_1$=0, and H_a:$b_1$ ≠ 0, Since p-value equals to 2.60e-12 <0.05, so we reject H0, support H_a, $b_1 ≠ 0$, implying that there is a correlation between total number of children and sexMale. For household size, H0: $b_2 = 0$, and H_a: $b_2 ≠ 0$, Since p-value equals to about <2e-16 <0.05, so we reject H0, support H_a, $b_2 ≠ 0$, implying that there is a correlation between total number of children and household size. For family income rank, H0: $b_3 = 0$, and H_a: $b_3 ≠ 0$, Since p-value equals to 2.37e-14 <0.05, so we reject H0, support H_a, $b_3 ≠ 0$, implying that there is a correlation between total number of children and family income rank. 
+
+#Result for model 2
+
+```{r, echo=FALSE}
+data_table %>% 
+  ggplot(aes(y = total_children, x = family_income_rank, color=sex)) + 
+  geom_point(alpha=0.5) + geom_smooth(method ="lm",se=FALSE) + labs(x = "family_income_rank", y="total_children", title = "Figure 4.4 - Total Children vs. family Income Rank for different gender")
+model_2 = lm(total_children~family_income_rank + sex + family_income_rank*sex, data = data_table)
+summary(model_2)
+```
+
+From the summary statistics we observe that the formula of estimated linear regression model_2 of y is $$Total Children = 1.899 – 0.045\times\ family.income.rank - 0.543\times sexMale - 0.111\times\ family.income.rank*sexMale$$, where sexMale equals to 1 if the respondent is male, and sexMale equals to 0 if the respondent is not male.
+
+The intercept of the fitted regression line and the y-axis is 1.899 (3 decimal points), meaning that the total children of someone, not a male, with zero family income, is 1.899. As $b_1 = -0.045$, implying that when family income rank increases by one unit, the corresponding average decrease in children's total numbers are 0.045 units (3 decimal points), given other predictors hold constant. As $b_2 = -0.543$, implying that when Male increases by one unit, the corresponding average decrease in children's total numbers are 0.543 units (3 decimal points), given other predictors hold constant. As $b_3 = 0.111$, implying that when the interaction term "family income rank * sexMale" increases by one unit, the corresponding average increase in children's total number is 0.111 units (3 decimal points), given other predictors hold constant. Thus, for males, when family income rank increases one unit, the total number of children increases by 0.069 (3 decimal points). But for females, when family income rank increases one unit, the total number of children decreases 0.043(3 decimal points). 
+
+Hence, the total number of children has a negative correlation with sexMale. However, numbers of total children have a weak negative correlation with family income rank and positive correlation with the interaction term "family income rank * sex," which is opposite to our initial hypothesis.
+  
+In the summary statistics, we can see that the standard error of $b_1$ is 0.008 (3 decimal points), the standard error of $b_2$ is 0.048(3 decimal points), and the standard error of $b_3$ is 0.012(3 decimal points). Therefore, SE($b_1$) < SE($b_3$) < SE($b_2$), showing that the mean estimation of family income rank is more accurate than "family income rank * sexMale" and the mean estimate of "family income rank * sexMale" is more accurate than sexMale.
+  
+Also, from the graph, we can observe that the fitted lines for males and females have opposite directions; they intersect at y (number of total children) equal to 1.8 and family income rank equals 5.  
+
+Then we investigate the p-value for each predictor. For the intercept, H0: $b_0 = 0$, and H_a: $b_0 ≠ 0$, since p-value of the intercept coefficient is < 2e-16 < 0.05, so we reject H0, support H_a, so $b_0 ≠ 0$, implying that the fitted line does not passes through the origin. For family income rank, H0: $b_1 = 0$, and H_a: $b_1 ≠ 0$, Since p-value equals to 2.46e-08 <0.05, so we reject H0, support H_a, $b_1 ≠ 0$, implying that there is a correlation between total number of children and family income rank. For sexMale, H0: $b_2 =0$, and H_a:$b_2 ≠ 0$, Since p-value equals to < 2e-16 <0.05, so we reject H0, support H_a, $b_2 ≠ 0$, implying that there is a correlation between total number of children and sexMale. For family income rank * sexMale, H0: $b_3 = 0$, and H_a: $b_3 ≠ 0$, Since p-value equals to <2e-16 <0.05, so we reject H0, support H_a, $b_3 ≠ 0$, implying that there is a correlation between total number of children and family income rank * sexMale. 
+
+#Result for model 3
+
+```{r, echo=FALSE}
+#wealthiness vs age, total children, and hh_size
+data_table <- data_table %>% 
+  mutate(large_number_of_children = ifelse(total_children >= mean(data_table$total_children), 1, 0))
+
+model_3<-glm(large_number_of_children ~ family_income_rank + hh_size + sex, family = binomial, data = data_table)
+summary(model_3)
+```
+
+From the summary statistics we observe that the formula of estimated logistic regression model is $$log (\hat p/(1-\hat p)) = -0.339 + 0.008\times family.income.rank + 0.278\times hh.size -0.236\times Malesex$$ (3 decimal points), where $b_0 = -0.339$, $b_1 = 0.008$, $b_2 = 0.278$, and $b_3 = -0.236$ 
+
+The intercept of the fitted regression line and the y-axis is -0.339, meaning that the log odds of someone having a large number of children is -0.339, given their family income rank equals zero, their household size equals zero, and their sex not being a male. As $b_1 = 0.008$, we know that for every additional unit increase in family income rank, we expect the log odds of having a larger number of children increase by 0.008, given other predictors hold constant. As $b_2 = 0.278$, we know that for every additional unit increase in household size, we expect the log odds of having a larger number of children increase by 0.278, given other predictors hold constant. As $b_3 = -0.236$, we know that for every participant whose sex is male, we expect the log odds of having a larger number of children decrease by 0.236 comparing with females, given other predictors hold constant. 
+
+Hence, there is a weak positive correlation between log odds of having many children and higher family income. There is also a positive correlation between log odds of having many children and larger family size. But there is a negative correlation between log odds of having many children and being male, which contradicts the sex aspect of our initial hypothesis. 
+
+In the summary statistics, we can see that the standard error of $b_1$ is 0.009(3 decimal points), the standard error of $b_2$ is 0.013(3 decimal points), and the standard error of $b_3$ is 0.029(3 decimal points). Therefore, SE($b_1$) < SE($b_2$) < SE($b_3$), showing that the mean estimation of family income rank is more accurate than household size and the mean estimation of household size is more accurate than sexMale. 
+
+Then we investigate p-value for each predictor. For the intercept, H0: $b_0 = 0$, and H_a: $b_0 ≠ 0$, since p-value of the intercept coefficient is <2e-16 < 0.05, therefore, we reject H0,support H_a, so $b_0 ≠ 0$, implying that the fitted line does not passes through the origin. For family income rank, H0: $b_1 = 0$, and H_a: $b_1 ≠ 0$, since p-value equals to 0.328 >> 0.05, therefore, we fail to reject H0, implying that there is no much correlation between family income rank and probability of having larger number of children. For household size, H0: $b_2 = 0$, and H_a: $b_2 ≠ 0$, since p-value equals to <2e-16 < 0.05, therefore, we reject H0, support H_a, so $b_2 ≠ 0$, implying that there is a correlation between household size and probability of having larger number of children. For MaleSex, H0: $b_3 = 0$, and H_a: $b_3 ≠ 0$, since p-value equals to <2e-16 < 0.05, therefore, we reject H0, support H_a, so $b_3 ≠ 0$, implying that there is a correlation between participants' sex and probability of having larger number of children.
+
+#Conclusion
+
+To conclude, both linear models 1 and 2 suggested a positive correlation between total children and household size. Moreover, the logistic model (model 3) suggested a positive correlation between household size and the probability of having many children. For the relationship between total children and males, both linear models 1 and 2 suggested a negative correlation. Moreover, the logistic model (model 3) also suggested a negative correlation between participants being male and their probability of having a larger number of children. For the relationship between total children and family income, both linear models 1 and 2 suggested a weak negative correlation. Besides, the logistic model (model 3) suggested no correlation between family income rank and the probability of having many children.
+
+## Discussion
+
+This project's original goal is to investigate if there is a linear relationship between the total number of children per person and the explanatory variables, positive or negative. However, after our careful experiment and more detailed classification of variables, we noticed that only some of the result matches our initial hypothesis because we take more factors into account, such as gender, to improve the accuracy and completeness.
+
+First of all, we conclude that the total number of children per person is positively correlated to household size. A reasonable cause of the result is that a family with larger household size tend to have more people to take care of the infant, increasing the confidence in raising their offsprings because they can afford better living conditions to assist the children's education.
+
+Then, we classified each person into male and female. The result is that males negatively correlate with the total number of children they have compared with females. Even though the result seems unrealistic as it requires exactly one male and one female to reproduce one infant. Therefore, we proposed a few possible reasons for such a result.  For example, suppose the couple is divorced. In that case, one of them may not acknowledge their child(children), or if a mother decides to give birth to a child without letting their father know, then the father wouldn't realize that they have a child, which causes their data to be inaccurate.
+
+Moreover, household income has a weak negative correlation with the total number of children, which implies wealthy families might not necessarily want to have more children. One possible explanation is that wealthy families might tend to believe in eugenics, meaning raising a few kids and providing them with the best resources and education. Another reason might be wealthy parents might prefer to have more personal time, so they might not want so many children that might affect their living qualities. But since everyone is different, people coming from the same background could have different opinions on the number of children they would like to have. Therefore, wealthiness might not be a good indicator of the total number of children.
+
+In conclusion, larger family size tends to have more children in the household, and males tend to have fewer children than females. Meanwhile, wealthiness might not be a good indicator of each individual's total number of children. All in all, even though some of the data lacks accuracy, we obtain strong evidence to prove the relationship between explanatory factors and the response factor. This project completes our initial task and fulfills the core questions in the introduction part. 
+
+# Weaknesses
+
+There are some weaknesses in our analysis. A shortcoming of the survey is that it might exist non-response, which is the analysis's potential drawbacks. This might occur when the interviewer could not contact the household members, or the interviewee cannot provide useful information, or participants refuse to take the survey. Also, there are issues with the survey question; for instance, we used variable family income in our study. The question asks the respondent family income before tax; many people may not know all their family members' income before tax, or even their income. Hence, respondents who answered this question may not be given an accurate account of their family income, affecting our study results. There are also many more sophisticated models that we could adopt to analyze the results.
+
+# Next Steps
+
+We could do a follow-up analysis using more sophisticated R codes and more efficient models, such as Bayesian or hierarchical. Meanwhile, we could plot different graphs to see the relationship between response variables and auxiliary variables. We could also analyze other variables in the data set; for example, we can find the relationship between numbers of total children and feelings of life, religion, age, education level, etc. Furthermore, we should do a follow-up survey of all the non-response respondents or design more sophisticated survey equations with more specific answer options.
+
+In addition to this investigation, we could also begin to find the reason behind the increasing population growth rate in recent years in Canada. Another core question arises from the growing trend: What is the newly increased Canadian population's composition? As many immigrants and refugees come to Canada, one may question the balance between immigrants and locally born immigrants. A more complex statistical is required based on our current statistical models and analysis to conduct this investigation. For example, we need to research on the number of new immigrants coming to Canada each year. It is also more challenging to survey because individuals may refuse to answer and record the accurate number of immigrants and refugees. Furthermore, this investigation can develop into the composition of the Canadian labour force – to find the possible composition of the Canadian labour force in the future; as the labour force is composed of employed and unemployed people, discouraged workers are not taken into labour force account.
+
+## References
+
+- Alexander, Rohan; Caetano, Sam, “GSS.cleaning”, Created 7 October 2020. Lisence MIT
+
+- Data Camp, “Adding new columns.” Retrieved October 19, 2020, from
+campus.datacamp.com/courses/introduction-to-r-for-finance/data-frames-3?ex=10
+
+- Statistics Canada Diversity and Sociocultural Statistique. (2017). General Social Survey Cycle 31: Families. User Guide
+
+- Statistics Canada Diversity and Sociocultural Statistique. (2017). General Social Survey Cycle 31: Families. Code Book
+
+- Tidyverse. (n.d.). “Suppress messages in read_csv” · Issue #954 · tidyverse/readr. Retrieved October 19, 2020, from github.com/tidyverse/readr/issues/954
+
+- World Bank Data,“Population, Total.” Retrieved from data.worldbank.org/indicator/SP.POP.TOTL?end=2019. 
+
+- Wu, Changbao, and Mary E. Thompson. "Basic Concepts in Survey Sampling." Sampling Theory and Practice. Springer, Cham, 2020. 3-15.
+
+- Stack Overflow User, “Label Encoder functionality in R?” Retrieved October 19, 2020, from stackoverflow.com/questions/38620424/label-encoder-functionality-in-r
+
+- Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+
+## Appendiex
+
+Github Repo: https://github.com/liviasidealab/STA304-PS2-Group-67
+
+
+
